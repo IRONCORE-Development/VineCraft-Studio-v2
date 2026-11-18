@@ -1,0 +1,6 @@
+{
+  "name": "VineCraft Studio",
+  "description": "Amazon Vine AI review automation, automatic quality inspection, strong review caching, and direct Amazon submission studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

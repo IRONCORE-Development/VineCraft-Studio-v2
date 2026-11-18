@@ -1,0 +1,333 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated reviewer automation settings, batch token guardrails, and profile preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "autoInspectOnGenerate": {
+          "type": "boolean"
+        },
+        "strongActionMode": {
+          "type": "string",
+          "enum": ["cache_and_next", "direct_post"]
+        },
+        "justClickSubmitEnabled": {
+          "type": "boolean"
+        },
+        "autoRefineBelowStrong": {
+          "type": "boolean"
+        },
+        "defaultTone": {
+          "type": "string",
+          "enum": ["balanced", "enthusiastic", "critical", "concise"]
+        },
+        "defaultLength": {
+          "type": "string",
+          "enum": ["short", "medium", "long"]
+        },
+        "customInstructions": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "amazonMarketplace": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "maxBatchItems": {
+          "type": "integer"
+        },
+        "maxBatchTokens": {
+          "type": "integer"
+        },
+        "batchDelayMs": {
+          "type": "integer"
+        },
+        "aiEnginePreset": {
+          "type": "string",
+          "enum": [
+            "free_local",
+            "anthropic",
+            "gemini",
+            "custom_endpoint",
+            "custom_gemini",
+            "custom_anthropic",
+            "custom_openrouter",
+            "web_handoff"
+          ]
+        },
+        "webHandoffTarget": {
+          "type": "string",
+          "enum": ["claude", "duck", "qwen", "mistral", "chatgpt", "gemini"]
+        },
+        "allowLocalCompute": {
+          "type": "boolean"
+        },
+        "privateSessionPerGeneration": {
+          "type": "boolean"
+        },
+        "advancedOverrideEnabled": {
+          "type": "boolean"
+        },
+        "generationModel": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "qualityModel": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "customEndpointUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "qualitySystemPromptOverride": {
+          "type": "string",
+          "maxLength": 6000
+        },
+        "learnedToneEnabled": {
+          "type": "boolean"
+        },
+        "learnedToneSummary": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "learnedFacts": {
+          "type": "array"
+        },
+        "learnedReviewsUsed": {
+          "type": "integer"
+        },
+        "learnedToneOverrideEnabled": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "autoInspectOnGenerate",
+        "strongActionMode",
+        "justClickSubmitEnabled",
+        "autoRefineBelowStrong",
+        "defaultTone",
+        "defaultLength",
+        "amazonMarketplace",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ReviewItem": {
+      "title": "ReviewItem",
+      "description": "Amazon Vine product review item across Pending, Requires Interaction, Submitted, Cached Strong, and Completed states.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "asin": {
+          "type": "string",
+          "maxLength": 14,
+          "pattern": "^[A-Z0-9]{8,14}$"
+        },
+        "productTitle": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "productDescription": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "productImage": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "reviewUrl": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "reviewLink": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "unavailableReason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "amazonStatusText": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "amazonQualityText": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "orderDateText": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "marketplace": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "rating": {
+          "type": "integer"
+        },
+        "liked": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "disliked": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "usage": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "recommend": {
+          "type": "string",
+          "enum": ["yes", "no", "unset"]
+        },
+        "tone": {
+          "type": "string",
+          "enum": ["balanced", "enthusiastic", "critical", "concise"]
+        },
+        "length": {
+          "type": "string",
+          "enum": ["short", "medium", "long"]
+        },
+        "draftTitle": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "draftBody": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "qualityBand": {
+          "type": "string",
+          "enum": ["none", "needs_detail", "good", "strong"]
+        },
+        "qualitySummary": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "qualityAsinMatch": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["matched", "mismatch", "insufficient_metadata"]
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        },
+        "qualityOriginality": {
+          "type": "object",
+          "properties": {
+            "verified": { "type": "boolean" },
+            "reason": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        },
+        "qualityStrengths": {
+          "type": "array"
+        },
+        "qualitySuggestions": {
+          "type": "array"
+        },
+        "qualityConcerns": {
+          "type": "array"
+        },
+        "tokensUsed": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "needs_review",
+            "interaction_required",
+            "cached_strong",
+            "ready_to_post",
+            "posted",
+            "submitted",
+            "completed"
+          ]
+        },
+        "batchId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "source": {
+          "type": "string",
+          "enum": ["manual", "amazon_detection", "amazon_pagination", "html_import", "batch_import"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "asin",
+        "productTitle",
+        "marketplace",
+        "rating",
+        "tone",
+        "length",
+        "recommend",
+        "qualityBand",
+        "status",
+        "source",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private reviewer automation preferences, batch limits, and profile."
+    },
+    "/users/{userId}/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/ReviewItem" },
+      "description": "Private review queue across Pending, Interaction Required, Cached Strong, Submitted, and Completed buckets."
+    }
+  }
+}

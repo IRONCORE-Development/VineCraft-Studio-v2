@@ -1,0 +1,242 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---- Global Hardened Primitives ----
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    function isStringBounded(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isStringArrayBounded(arr, maxItems) {
+      return arr is list && arr.size() <= maxItems && (arr.size() == 0 || isStringBounded(arr[0], 500));
+    }
+
+    function isSuggestionArrayBounded(arr, maxItems) {
+      return arr is list && arr.size() <= maxItems && (arr.size() == 0 || (
+        arr[0] is map &&
+        arr[0].keys().hasAll(['issue', 'question']) &&
+        arr[0].keys().hasOnly(['quote', 'issue', 'question']) &&
+        (!('quote' in arr[0]) || isStringBounded(arr[0].quote, 500)) &&
+        isStringBounded(arr[0].issue, 500) &&
+        isStringBounded(arr[0].question, 500)
+      ));
+    }
+
+    function isValidAsinMatch(val) {
+      return val is map
+        && val.keys().hasAll(['status', 'reason'])
+        && val.keys().hasOnly(['status', 'reason'])
+        && val.status in ['matched', 'mismatch', 'insufficient_metadata']
+        && isStringBounded(val.reason, 500);
+    }
+
+    function isValidOriginalityCheck(val) {
+      return val is map
+        && val.keys().hasAll(['verified', 'reason'])
+        && val.keys().hasOnly(['verified', 'reason'])
+        && val.verified is bool
+        && isStringBounded(val.reason, 500);
+    }
+
+    // ---- Entity Blueprints ----
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'autoInspectOnGenerate', 'strongActionMode', 'justClickSubmitEnabled',
+          'autoRefineBelowStrong', 'defaultTone', 'defaultLength', 'amazonMarketplace',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'email', 'autoInspectOnGenerate', 'strongActionMode',
+          'justClickSubmitEnabled', 'autoRefineBelowStrong', 'defaultTone', 'defaultLength',
+          'customInstructions', 'amazonMarketplace', 'maxBatchItems', 'maxBatchTokens',
+          'batchDelayMs', 'aiEnginePreset', 'webHandoffTarget', 'allowLocalCompute', 'privateSessionPerGeneration',
+          'advancedOverrideEnabled', 'generationModel',
+          'qualityModel', 'customEndpointUrl', 'qualitySystemPromptOverride',
+          'learnedToneEnabled', 'learnedToneSummary', 'learnedFacts',
+          'learnedReviewsUsed', 'learnedToneOverrideEnabled',
+          'createdAt', 'updatedAt'
+        ])
+        && data.uid == userId
+        && (!('displayName' in data) || isStringBounded(data.displayName, 120))
+        && (!('email' in data) || isStringBounded(data.email, 200))
+        && data.autoInspectOnGenerate is bool
+        && data.strongActionMode in ['cache_and_next', 'direct_post']
+        && data.justClickSubmitEnabled is bool
+        && data.autoRefineBelowStrong is bool
+        && data.defaultTone in ['balanced', 'enthusiastic', 'critical', 'concise']
+        && data.defaultLength in ['short', 'medium', 'long']
+        && (!('customInstructions' in data) || isStringBounded(data.customInstructions, 4000))
+        && isStringBounded(data.amazonMarketplace, 64)
+        && (!('maxBatchItems' in data) || (data.maxBatchItems is int && data.maxBatchItems >= 1 && data.maxBatchItems <= 500))
+        && (!('maxBatchTokens' in data) || (data.maxBatchTokens is int && data.maxBatchTokens >= 5000 && data.maxBatchTokens <= 5000000))
+        && (!('batchDelayMs' in data) || (data.batchDelayMs is int && data.batchDelayMs >= 0 && data.batchDelayMs <= 60000))
+        && (!('aiEnginePreset' in data) || data.aiEnginePreset in ['free_local', 'anthropic', 'gemini', 'custom_endpoint', 'custom_gemini', 'custom_anthropic', 'custom_openrouter', 'web_handoff'])
+        && (!('webHandoffTarget' in data) || data.webHandoffTarget in ['claude', 'duck', 'qwen', 'mistral', 'chatgpt', 'gemini'])
+        && (!('allowLocalCompute' in data) || data.allowLocalCompute is bool)
+        && (!('privateSessionPerGeneration' in data) || data.privateSessionPerGeneration is bool)
+        && (!('advancedOverrideEnabled' in data) || data.advancedOverrideEnabled is bool)
+        && (!('generationModel' in data) || isStringBounded(data.generationModel, 120))
+        && (!('qualityModel' in data) || isStringBounded(data.qualityModel, 120))
+        && (!('customEndpointUrl' in data) || isStringBounded(data.customEndpointUrl, 500))
+        && (!('qualitySystemPromptOverride' in data) || isStringBounded(data.qualitySystemPromptOverride, 6000))
+        && (!('learnedToneEnabled' in data) || data.learnedToneEnabled is bool)
+        && (!('learnedToneSummary' in data) || isStringBounded(data.learnedToneSummary, 3000))
+        && (!('learnedFacts' in data) || isStringArrayBounded(data.learnedFacts, 30))
+        && (!('learnedReviewsUsed' in data) || (data.learnedReviewsUsed is int && data.learnedReviewsUsed >= 0 && data.learnedReviewsUsed <= 10000))
+        && (!('learnedToneOverrideEnabled' in data) || data.learnedToneOverrideEnabled is bool)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReviewItem(data, userId) {
+      return data.keys().hasAll([
+          'ownerId', 'asin', 'productTitle', 'marketplace', 'rating', 'tone', 'length',
+          'recommend', 'qualityBand', 'status', 'source', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'asin', 'productTitle', 'productDescription', 'productImage',
+          'reviewUrl', 'reviewLink', 'unavailableReason', 'amazonStatusText',
+          'amazonQualityText', 'orderDateText', 'marketplace', 'rating', 'liked',
+          'disliked', 'usage', 'notes', 'recommend', 'tone', 'length', 'draftTitle',
+          'draftBody', 'qualityBand', 'qualitySummary', 'qualityAsinMatch', 'qualityOriginality',
+          'qualityStrengths', 'qualitySuggestions', 'qualityConcerns', 'tokensUsed', 'status', 'batchId',
+          'source', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId == userId
+        && data.asin is string && data.asin.size() >= 8 && data.asin.size() <= 14 && data.asin.matches('^[A-Z0-9]{8,14}$')
+        && data.productTitle is string && data.productTitle.size() >= 1 && data.productTitle.size() <= 500
+        && (!('productDescription' in data) || isStringBounded(data.productDescription, 5000))
+        && (!('productImage' in data) || isStringBounded(data.productImage, 1000))
+        && (!('reviewUrl' in data) || isStringBounded(data.reviewUrl, 1000))
+        && (!('reviewLink' in data) || isStringBounded(data.reviewLink, 1000))
+        && (!('unavailableReason' in data) || isStringBounded(data.unavailableReason, 500))
+        && (!('amazonStatusText' in data) || isStringBounded(data.amazonStatusText, 200))
+        && (!('amazonQualityText' in data) || isStringBounded(data.amazonQualityText, 200))
+        && (!('orderDateText' in data) || isStringBounded(data.orderDateText, 100))
+        && data.marketplace is string && data.marketplace.size() >= 1 && data.marketplace.size() <= 64
+        && data.rating is int && data.rating >= 0 && data.rating <= 5
+        && (!('liked' in data) || isStringBounded(data.liked, 2000))
+        && (!('disliked' in data) || isStringBounded(data.disliked, 2000))
+        && (!('usage' in data) || isStringBounded(data.usage, 2000))
+        && (!('notes' in data) || isStringBounded(data.notes, 4000))
+        && data.recommend in ['yes', 'no', 'unset']
+        && data.tone in ['balanced', 'enthusiastic', 'critical', 'concise']
+        && data.length in ['short', 'medium', 'long']
+        && (!('draftTitle' in data) || isStringBounded(data.draftTitle, 500))
+        && (!('draftBody' in data) || isStringBounded(data.draftBody, 20000))
+        && data.qualityBand in ['none', 'needs_detail', 'good', 'strong']
+        && (!('qualitySummary' in data) || isStringBounded(data.qualitySummary, 2000))
+        && (!('qualityAsinMatch' in data) || isValidAsinMatch(data.qualityAsinMatch))
+        && (!('qualityOriginality' in data) || isValidOriginalityCheck(data.qualityOriginality))
+        && (!('qualityStrengths' in data) || isStringArrayBounded(data.qualityStrengths, 20))
+        && (!('qualitySuggestions' in data) || isSuggestionArrayBounded(data.qualitySuggestions, 20))
+        && (!('qualityConcerns' in data) || isStringArrayBounded(data.qualityConcerns, 20))
+        && (!('tokensUsed' in data) || (data.tokensUsed is int && data.tokensUsed >= 0 && data.tokensUsed <= 1000000))
+        && data.status in ['queued', 'needs_review', 'interaction_required', 'cached_strong', 'ready_to_post', 'posted', 'submitted', 'completed']
+        && (!('batchId' in data) || isStringBounded(data.batchId, 128))
+        && data.source in ['manual', 'amazon_detection', 'amazon_pagination', 'html_import', 'batch_import']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // ---- Collection Rules ----
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'email', 'autoInspectOnGenerate', 'strongActionMode',
+          'justClickSubmitEnabled', 'autoRefineBelowStrong', 'defaultTone',
+          'defaultLength', 'customInstructions', 'amazonMarketplace',
+          'maxBatchItems', 'maxBatchTokens', 'batchDelayMs',
+          'aiEnginePreset', 'webHandoffTarget', 'allowLocalCompute', 'privateSessionPerGeneration',
+          'advancedOverrideEnabled', 'generationModel',
+          'qualityModel', 'customEndpointUrl', 'qualitySystemPromptOverride',
+          'learnedToneEnabled', 'learnedToneSummary', 'learnedFacts',
+          'learnedReviewsUsed', 'learnedToneOverrideEnabled',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /reviews/{reviewId} {
+        allow list: if isSignedIn() && request.auth.uid == userId && resource.data.ownerId == request.auth.uid;
+        allow get: if isOwner(userId) && isValidId(reviewId) && resource.data.ownerId == request.auth.uid;
+
+        allow create: if isOwner(userId)
+          && isValidId(reviewId)
+          && isValidReviewItem(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isOwner(userId)
+          && isValidId(reviewId)
+          && isValidReviewItem(incoming(), userId)
+          && exists(/databases/$(database)/documents/users/$(userId))
+          && existing().status != 'completed'
+          && incoming().ownerId == existing().ownerId
+          && incoming().asin == existing().asin
+          && incoming().source == existing().source
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            // Action 1: Update product & experience inputs
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'productTitle', 'productDescription', 'productImage', 'reviewUrl',
+              'marketplace', 'rating', 'liked', 'disliked', 'usage', 'notes',
+              'recommend', 'tone', 'length', 'updatedAt'
+            ]) ||
+            // Action 2: Save AI draft + quality inspection assessment + token count + status transition
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'draftTitle', 'draftBody', 'rating', 'qualityBand', 'qualitySummary',
+              'qualityAsinMatch', 'qualityOriginality', 'qualityStrengths', 'qualitySuggestions',
+              'qualityConcerns', 'tokensUsed', 'status', 'updatedAt'
+            ]) ||
+            // Action 3: Sync status/metadata from Amazon pagination or bridge submission
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'status', 'productTitle', 'productImage', 'reviewUrl', 'reviewLink',
+              'unavailableReason', 'amazonStatusText', 'amazonQualityText',
+              'orderDateText', 'updatedAt'
+            ])
+          );
+
+        allow delete: if isOwner(userId)
+          && isValidId(reviewId)
+          && exists(/databases/$(database)/documents/users/$(userId));
+      }
+    }
+  }
+}
